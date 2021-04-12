@@ -10,29 +10,17 @@ constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_M
 
 class TooFastTeams: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginWindow*/
 {
+private:
+    std::shared_ptr<NetcodeManager> Netcode;
 
-	//std::shared_ptr<bool> enabled;
+public:
+    void onLoad() override;
+    void onUnload() override;
 
-	//Boilerplate
-	virtual void onLoad();
-	virtual void onUnload();
+    ServerWrapper GetCurrentGameState();
 
-	// Inherited via PluginWindow
-	/*
+    void OnMessageReceived(const std::string& Message, PriWrapper Sender);
 
-	bool isWindowOpen_ = false;
-	bool isMinimized_ = false;
-	std::string menuTitle_ = "TooFastTeams";
-
-	virtual void Render() override;
-	virtual std::string GetMenuName() override;
-	virtual std::string GetMenuTitle() override;
-	virtual void SetImGuiContext(uintptr_t ctx) override;
-	virtual bool ShouldBlockInput() override;
-	virtual bool IsActiveOverlay() override;
-	virtual void OnOpen() override;
-	virtual void OnClose() override;
-	
-	*/
+    void onTick();
 };
 
