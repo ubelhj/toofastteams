@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "TooFastTeams.h"
+#include "../NetcodeManager/NetcodeManager.h"
 
 
 BAKKESMOD_PLUGIN(TooFastTeams, "Too fast plugin for teams", plugin_version, PLUGINTYPE_FREEPLAY)
@@ -20,56 +21,62 @@ void TooFastTeams::onLoad()
 {
 	_globalCvarManager = cvarManager;
 
+	Netcode = std::make_shared<NetcodeManager>(cvarManager, gameWrapper, exports,
+		[this](const std::string& Message, PriWrapper Sender) { OnMessageReceived(Message, Sender); });
+
 	cvarManager->registerCvar("toofastteams_max_blue", "2300", "sets blue max speed", true, true, 0)
 		.addOnValueChanged([this](std::string cvarName, CVarWrapper cvar) {
 			if (gameWrapper->IsInOnlineGame()) { return; }
 
-			Netcode->SendMessage("maxb" + cvar.getStringValue());});
+			Netcode->SendMessageB("maxb" + cvar.getStringValue());
+		});
 
 	cvarManager->registerCvar("toofastteams_max_orange", "2300", "sets orange max speed", true, true, 0)
 		.addOnValueChanged([this](std::string cvarName, CVarWrapper cvar) {
 			if (gameWrapper->IsInOnlineGame()) { return; }
 
-			Netcode->SendMessage("maxo" + cvar.getStringValue());});
+			Netcode->SendMessageB("maxo" + cvar.getStringValue());});
 
 	cvarManager->registerCvar("toofastteams_mult_blue", "1.01", "sets blue speed multiplier", true, true, -1, true, 2)
 		.addOnValueChanged([this](std::string cvarName, CVarWrapper cvar) {
 			if (gameWrapper->IsInOnlineGame()) { return; }
 
-			Netcode->SendMessage("multb" + cvar.getStringValue());});
+			Netcode->SendMessageB("multb" + cvar.getStringValue());});
 
 	cvarManager->registerCvar("toofastteams_mult_orange", "1.01", "sets orange speed multiplier", true, true, -1, true, 2)
 		.addOnValueChanged([this](std::string cvarName, CVarWrapper cvar) {
 			if (gameWrapper->IsInOnlineGame()) { return; }
 
-			Netcode->SendMessage("multo" + cvar.getStringValue());});
+			Netcode->SendMessageB("multo" + cvar.getStringValue());});
 
 	cvarManager->registerCvar("toofastteams_threshold_blue", "2300", "sets blue speed threshold", true, true, 0)
 		.addOnValueChanged([this](std::string cvarName, CVarWrapper cvar) {
 			if (gameWrapper->IsInOnlineGame()) { return; }
 
-			Netcode->SendMessage("threshb" + cvar.getStringValue());});
+			Netcode->SendMessageB("threshb" + cvar.getStringValue());});
 
 	cvarManager->registerCvar("toofastteams_threshold_orange", "2300", "sets orange speed threshold", true, true, 0)
 		.addOnValueChanged([this](std::string cvarName, CVarWrapper cvar) {
 			if (gameWrapper->IsInOnlineGame()) { return; }
 
-			Netcode->SendMessage("thresho" + cvar.getStringValue());});
+			Netcode->SendMessageB("thresho" + cvar.getStringValue());});
 
 	cvarManager->registerNotifier("toofastteams_isonline", [this](...) {
 		cvarManager->log(std::to_string(gameWrapper->IsInOnlineGame()));
 		}, "checks if online match", PERMISSION_ALL);
 
+	gameWrapper->RegisterDrawable([this](CanvasWrapper canvas) { Render(canvas); });
+
 	gameWrapper->HookEventPost("Function TAGame.GameEvent_TA.AddCar",
 		[this](...) { 
 			if (gameWrapper->IsInOnlineGame()) { return; }
 		
-			Netcode->SendMessage("maxb" + cvarManager->getCvar("toofastteams_max_blue").getStringValue());
-			Netcode->SendMessage("maxo" + cvarManager->getCvar("toofastteams_max_orange").getStringValue());
-			Netcode->SendMessage("multb" + cvarManager->getCvar("toofastteams_mult_blue").getStringValue());
-			Netcode->SendMessage("multb" + cvarManager->getCvar("toofastteams_mult_orange").getStringValue());
-			Netcode->SendMessage("threshb" + cvarManager->getCvar("toofastteams_threshold_blue").getStringValue());
-			Netcode->SendMessage("thresho" + cvarManager->getCvar("toofastteams_threshold_orange").getStringValue());
+			Netcode->SendMessageB("maxb" + cvarManager->getCvar("toofastteams_max_blue").getStringValue());
+			Netcode->SendMessageB("maxo" + cvarManager->getCvar("toofastteams_max_orange").getStringValue());
+			Netcode->SendMessageB("multb" + cvarManager->getCvar("toofastteams_mult_blue").getStringValue());
+			Netcode->SendMessageB("multb" + cvarManager->getCvar("toofastteams_mult_orange").getStringValue());
+			Netcode->SendMessageB("threshb" + cvarManager->getCvar("toofastteams_threshold_blue").getStringValue());
+			Netcode->SendMessageB("thresho" + cvarManager->getCvar("toofastteams_threshold_orange").getStringValue());
 
 			cvarManager->log("sent messages");
 		});
@@ -94,6 +101,8 @@ ServerWrapper TooFastTeams::GetCurrentGameState() {
 // FULFILL REQUEST //
 void TooFastTeams::OnMessageReceived(const std::string& Message, PriWrapper Sender) {
 	if (Sender.IsNull()) { return; }
+
+	cvarManager->log(Message);
 
 	if (Message.find("max") == 0) {
 		// gets speed value (right after prefix Speed)
@@ -128,19 +137,16 @@ void TooFastTeams::OnMessageReceived(const std::string& Message, PriWrapper Send
 
 		try {
 			speedValue = std::stof(speedString);
-		}
-		catch (...) {
+		} catch (...) {
 			cvarManager->log("error in receving new speed mult (invalid number) on message: " + Message);
 			return;
 		}
 
 		if (teamString == "b") {
 			blueSpeedMultiplier = speedValue;
-		}
-		else if (teamString == "o") {
+		} else if (teamString == "o") {
 			orangeSpeedMultiplier = speedValue;
-		}
-		else {
+		} else {
 			cvarManager->log("error in receving new speed mult (invalid team) on message: " + Message);
 		}
 	} else if (Message.find("thresh") == 0) {
@@ -161,17 +167,16 @@ void TooFastTeams::OnMessageReceived(const std::string& Message, PriWrapper Send
 
 		if (teamString == "b") {
 			blueSpeedThreshold = speedValue;
-		}
-		else if (teamString == "o") {
+		} else if (teamString == "o") {
 			orangeSpeedThreshold = speedValue;
-		}
-		else {
+		} else {
 			cvarManager->log("error in receving new speed thresh (invalid team) on message: " + Message);
 		}
 	} else {
 		cvarManager->log("unknown message received: " + Message);
 	}
 }
+
 
 void TooFastTeams::onTick() {
 	auto sw = GetCurrentGameState();
@@ -294,4 +299,25 @@ void TooFastTeams::onTick() {
 		}
 	}
 
+}
+
+void TooFastTeams::Render(CanvasWrapper Canvas) {
+	std::vector<std::string> DebugStrings;
+	DebugStrings.push_back("git gud");
+
+	DebugStrings.push_back("blueSpeedMultiplier: " + std::to_string(blueSpeedMultiplier)); 
+	DebugStrings.push_back("blueSpeedThreshold: " + std::to_string(blueSpeedThreshold)); 
+	DebugStrings.push_back("blueMaxSpeed: " + std::to_string(blueMaxSpeed)); 
+	DebugStrings.push_back("orangeSpeedMultiplier: " + std::to_string(orangeSpeedMultiplier)); 
+	DebugStrings.push_back("orangeSpeedThreshold: " + std::to_string(orangeSpeedThreshold)); 
+	DebugStrings.push_back("orangeMaxSpeed: " + std::to_string(orangeMaxSpeed)); 
+
+	Vector2 BasePos = { 50, 50 };
+	Canvas.SetColor(LinearColor{ 0, 255, 0, 255 });
+	for (const auto& Whatever : DebugStrings)
+	{
+		Canvas.SetPosition(BasePos);
+		Canvas.DrawString(Whatever);
+		BasePos.Y += 20;
+	}
 }

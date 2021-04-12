@@ -19,6 +19,8 @@ public:
 
     ServerWrapper GetCurrentGameState();
 
+    void Render(CanvasWrapper canvas);
+
     void OnMessageReceived(const std::string& Message, PriWrapper Sender);
 
     void onTick();
