@@ -74,7 +74,7 @@ void TooFastTeams::onLoad()
 			Netcode->SendMessageB("maxb" + cvarManager->getCvar("toofastteams_max_blue").getStringValue());
 			Netcode->SendMessageB("maxo" + cvarManager->getCvar("toofastteams_max_orange").getStringValue());
 			Netcode->SendMessageB("multb" + cvarManager->getCvar("toofastteams_mult_blue").getStringValue());
-			Netcode->SendMessageB("multb" + cvarManager->getCvar("toofastteams_mult_orange").getStringValue());
+			Netcode->SendMessageB("multo" + cvarManager->getCvar("toofastteams_mult_orange").getStringValue());
 			Netcode->SendMessageB("threshb" + cvarManager->getCvar("toofastteams_threshold_blue").getStringValue());
 			Netcode->SendMessageB("thresho" + cvarManager->getCvar("toofastteams_threshold_orange").getStringValue());
 
@@ -183,28 +183,26 @@ void TooFastTeams::onTick() {
 
 	if (!sw) return;
 
-	auto teams = sw.GetTeams();
+	auto cars = sw.GetCars();
 
-	if (teams.IsNull()) return;
+	if (cars.IsNull()) return;
 
-	if (teams.Count() != 2) {
-		cvarManager->log("weird number of teams, speak to developer: " + std::to_string(teams.Count()));
-		return;
+	std::vector<CarWrapper> BlueCars;
+	std::vector<CarWrapper> OrangeCars;
+
+	ArrayWrapper<CarWrapper> Cars = sw.GetCars();
+	for (int i = 0; i < Cars.Count(); ++i)
+	{
+		CarWrapper Car = Cars.Get(i);
+		if (Car.IsNull()) { continue; }
+
+		if (Car.GetTeamNum2() == 0) { BlueCars.push_back(Car); }
+		if (Car.GetTeamNum2() == 1) { OrangeCars.push_back(Car); }
 	}
 
-	auto bluePRIs = teams.Get(0).GetMembers();
-	auto orangePRIs = teams.Get(1).GetMembers();
+	for (CarWrapper car : BlueCars) {
 
-	for (PriWrapper pri : bluePRIs) {
-		if (!pri) {
-			continue;
-		}
-
-		CarWrapper car = pri.GetCar();
-
-		if (!car) {
-			continue;
-		}
+		if (car.IsNull()) { continue; }
 
 		// max speed is reset when demoed, so ensures it's always valid
 		car.SetMaxLinearSpeed2(blueMaxSpeed);
@@ -216,28 +214,28 @@ void TooFastTeams::onTick() {
 
 		if (input.Throttle == 0) {
 			//cvarManager->log("player is not throttling");
-			return;
+			continue;
 		}
 
 		Vector currentVelocity = car.GetVelocity();
 		float currSpeed = car.GetForwardSpeed();
 
 		if (!car.IsOnGround()) {
-			return;
+			continue;
 		}
 
 		if (blueSpeedMultiplier < 0) {
-			return;
+			continue;
 		}
 
 		if (std::abs(currSpeed) >= blueSpeedThreshold) {
-			return;
+			continue;
 		}
 
 		//cvarManager->log(std::to_string(input.Steer));
 
 		if (std::abs(input.Steer) > 0.5) {
-			return;
+			continue;
 		}
 
 		if ((currSpeed <= 0 && input.Throttle < 0) || (currSpeed >= 0 && input.Throttle > 0)) {
@@ -247,13 +245,7 @@ void TooFastTeams::onTick() {
 		}
 	}
 
-	for (PriWrapper pri : orangePRIs) {
-		if (!pri) {
-			continue;
-		}
-
-		CarWrapper car = pri.GetCar();
-
+	for (CarWrapper car : OrangeCars) {
 		if (!car) {
 			continue;
 		}
@@ -268,28 +260,28 @@ void TooFastTeams::onTick() {
 
 		if (input.Throttle == 0) {
 			//cvarManager->log("player is not throttling");
-			return;
+			continue;
 		}
 
 		Vector currentVelocity = car.GetVelocity();
 		float currSpeed = car.GetForwardSpeed();
 
 		if (!car.IsOnGround()) {
-			return;
+			continue;
 		}
 
 		if (orangeSpeedMultiplier < 0) {
-			return;
+			continue;
 		}
 
 		if (std::abs(currSpeed) >= orangeSpeedThreshold) {
-			return;
+			continue;
 		}
 
 		//cvarManager->log(std::to_string(input.Steer));
 
 		if (std::abs(input.Steer) > 0.5) {
-			return;
+			continue;
 		}
 
 		if ((currSpeed <= 0 && input.Throttle < 0) || (currSpeed >= 0 && input.Throttle > 0)) {
@@ -298,7 +290,6 @@ void TooFastTeams::onTick() {
 			car.SetVelocity(currentVelocity);
 		}
 	}
-
 }
 
 void TooFastTeams::Render(CanvasWrapper Canvas) {
