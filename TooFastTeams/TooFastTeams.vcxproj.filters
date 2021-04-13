@@ -137,4 +137,9 @@
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\plugins\settings\toofastteams.set">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>

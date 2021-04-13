@@ -65,7 +65,7 @@ void TooFastTeams::onLoad()
 		cvarManager->log(std::to_string(gameWrapper->IsInOnlineGame()));
 		}, "checks if online match", PERMISSION_ALL);
 
-	gameWrapper->RegisterDrawable([this](CanvasWrapper canvas) { Render(canvas); });
+	/*gameWrapper->RegisterDrawable([this](CanvasWrapper canvas) { Render(canvas); });*/
 
 	gameWrapper->HookEventPost("Function TAGame.GameEvent_TA.AddCar",
 		[this](...) { 
@@ -83,6 +83,8 @@ void TooFastTeams::onLoad()
 
 	gameWrapper->HookEventPost("Function TAGame.Car_TA.SetVehicleInput",
 		[this](...) { onTick(); });
+
+	GenerateSettingsFile();
 }
 
 void TooFastTeams::onUnload()
@@ -311,4 +313,35 @@ void TooFastTeams::Render(CanvasWrapper Canvas) {
 		Canvas.DrawString(Whatever);
 		BasePos.Y += 20;
 	}
+}
+
+void TooFastTeams::GenerateSettingsFile()
+{
+	std::ofstream SettingsFile(gameWrapper->GetBakkesModPath() / "plugins" / "settings" / "toofastteams.set");
+
+	nl("TooFast Teams");
+	nl("9|Makes teams way faster");
+	nl("8|");
+	nl("9|Speed multiplier applied each tick.Effectively is an acceleration force. Numbers below 1.005 will actually be slower than normal gameplay");
+	nl("4|Blue speed multiplier|toofastteams_max_blue|1.005|1.1");
+	nl("4|Orange speed multiplier|toofastteams_max_orange|1.005|1.1");
+	nl("9|Maximum speed(forward or backward) where the plugin will accelerate you");
+	nl("9|If set low, will just help you hit supersonic faster");
+	nl("9|If set high, will make you insanely mobile");
+	nl("9|If jumping isn't working for either team, hit this button");
+	nl("7|");
+	nl("0|Reset acceleration|toofastteams_threshold_blue -1; toofastteams_threshold_orange -1");
+	nl("4|Blue acceleration max threshold|toofastteams_threshold_blue|0|23000");
+	nl("4|Orange acceleration max threshold|toofastteams_threshold_orange|0|23000");
+	nl("9|Increase your maximum car speed to go beyond supersonic(default rocket league value is 2300)");
+	nl("4|Blue max car speed|toofastteams_max_blue|2300|23000");
+	nl("4|Orange max car speed|toofastteams_max_orange|2300|23000");
+	nl("8|");
+	nl("9|Plugin commissioned by Striped");
+	nl("9|youtube.com/c/Striped");
+	nl("9|Plugin made by JerryTheBee#1117 DM me on discord for custom plugins");
+	blank;
+
+	SettingsFile.close();
+	cvarManager->executeCommand("cl_settings_refreshplugins");
 }
