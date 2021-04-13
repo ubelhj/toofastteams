@@ -323,8 +323,8 @@ void TooFastTeams::GenerateSettingsFile()
 	nl("9|Makes teams way faster");
 	nl("8|");
 	nl("9|Speed multiplier applied each tick.Effectively is an acceleration force. Numbers below 1.005 will actually be slower than normal gameplay");
-	nl("4|Blue speed multiplier|toofastteams_max_blue|1.005|1.1");
-	nl("4|Orange speed multiplier|toofastteams_max_orange|1.005|1.1");
+	nl("4|Blue speed multiplier|toofastteams_mult_blue|1.005|1.1");
+	nl("4|Orange speed multiplier|toofastteams_mult_orange|1.005|1.1");
 	nl("9|Maximum speed(forward or backward) where the plugin will accelerate you");
 	nl("9|If set low, will just help you hit supersonic faster");
 	nl("9|If set high, will make you insanely mobile");
